@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Upload and Name Placement</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #canvas {
+      border: 1px solid #ccc;
+    }
+    #output {
+      margin-top: 20px;
+    }
+    .controls {
+      margin-top: 10px;
+    }
+    .crop-preview {
+      max-width: 100%;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Upload Image, Add Name, and Download</h1>
+  
+  <!-- Image Upload -->
+  <input type="file" id="imageInput" accept="image/*">
+  
+  <!-- Image Crop Preview -->
+  <div>
+    <img id="imagePreview" class="crop-preview">
+  </div>
+
+  <!-- Crop Button -->
+  <button id="cropButton">Crop Image</button>
+
+  <!-- Name Input -->
+  <div class="controls">
+    <label for="nameInput">Enter your name:</label>
+    <input type="text" id="nameInput" placeholder="Enter name">
+  </div>
+  
+  <!-- Download Button -->
+  <button id="generateButton">Generate Image</button>
+
+  <!-- Canvas for Template -->
+  <canvas id="canvas" width="800" height="800" style="display:none;"></canvas>
+
+  <!-- Output Image -->
+  <div id="output">
+    <img id="finalImage" style="max-width: 100%;">
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+  <script>
+    let cropper;
+    let croppedImageData;
+    const imageInput = document.getElementById('imageInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const canvas = document.getElementById('canvas');
+    const finalImage = document.getElementById('finalImage');
+    const nameInput = document.getElementById('nameInput');
+    const generateButton = document.getElementById('generateButton');
+    const cropButton = document.getElementById('cropButton');
+
+    const templateImageSrc = 'template.jpg'; // Use the correct path for your template image.
+
+    // Load Image for Cropping
+    imageInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        imagePreview.src = reader.result;
+        if (cropper) {
+          cropper.destroy();
+        }
+        cropper = new Cropper(imagePreview, {
+          aspectRatio: 1,
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // When the user clicks the Crop button
+    cropButton.addEventListener('click', () => {
+      if (cropper) {
+        // Get the cropped image data from the cropper
+        croppedImageData = cropper.getCroppedCanvas({
+          width: 150, // Adjust dimensions as per your template
+          height: 150,
+        }).toDataURL();
+        
+        // Optional: Show the cropped image preview if you want
+        imagePreview.src = croppedImageData;
+        cropper.destroy(); // Remove the cropper after cropping
+      }
+    });
+
+    // Generate final image
+    generateButton.addEventListener('click', () => {
+      const ctx = canvas.getContext('2d');
+      const templateImage = new Image();
+
+      // Load the template image onto the canvas
+      templateImage.src = templateImageSrc;
+      templateImage.onload = () => {
+        ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height);
+
+        // Draw cropped image on the canvas (set position based on your template)
+        const croppedImage = new Image();
+        croppedImage.src = croppedImageData;
+        croppedImage.onload = () => {
+          ctx.drawImage(croppedImage, 320, 260); // Adjust x, y coordinates
+
+          // Draw the name on the canvas (adjust position, font, and style as needed)
+          ctx.font = '24px Arial';
+          ctx.fillStyle = '#000'; // Change color if necessary
+          ctx.fillText(nameInput.value, 320, 450); // Adjust x, y coordinates
+
+          // Output final image
+          finalImage.src = canvas.toDataURL('image/png');
+          finalImage.style.display = 'block';
+
+          // Trigger download
+          const downloadLink = document.createElement('a');
+          downloadLink.href = canvas.toDataURL('image/png'); // Convert canvas to PNG format
+          downloadLink.download = 'final_image.png'; // Specify the filename
+          document.body.appendChild(downloadLink); // Append link to the DOM
+          downloadLink.click(); // Trigger the download
+          document.body.removeChild(downloadLink); // Remove link from DOM after download
+        };
+      };
+    });
+  </script>
+</body>
+</html>
